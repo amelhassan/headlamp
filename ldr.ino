@@ -11,42 +11,41 @@ void setup() {
 }
 
 void loop() {
+  // Collect all sensor information
   LDRValue = analogRead(LDRpin); // read the value from the LDR
+  
+  // Display debug info
   info();
-  // The higher the LDRValue the brighter the enviornment is 
-  // The lower the LDRValue the darker the enviornment is 
-  //Serial.println(LDRValue);      // print the value to the serial port, tools -> Serial Monitor 
-  delay(100);                    // wait a little
+
+  delay(100); 
+  // Decision tree
+  // Higher LDRValue == Brighter Environment
   if (LDRValue > 1000){
       Serial.println("dimming");
       brightness = 105;
       analogWrite(ledPin, brightness); // dims 
-    delay(200);
     dimmed = true;
-  }
-  else{
-    if (dimmed) {
-      rampUp();
-      dimmed = false;
-    }
+  } else if (dimmed) {
+    ramp = rampUp(ramp);
+  } else {
     brightness = 255;
     analogWrite(ledPin, brightness);
-    //delay(200);
-    }
+  }
 }
 
-void rampUp(){
-  Serial.println("Entered rampup"); 
+byte rampUp(byte r){
+  Serial.println("Ramping");
   info();
-  while (brightness < 255){
-    info();
-      brightness += 50;
-      analogWrite(ledPin, brightness);
-      delay(1000);
-    }
-    Serial.println("Exiting rampup");
+  if (r == 255) {
+    dimmed = false;
     return;
- }
+  } else {
+    r += 50;
+    analogWrite(ledPin, r)
+    delay(1000)
+    return r;
+  }
+}
 
 void info(){
   Serial.print("LDR: ");
