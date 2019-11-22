@@ -1,5 +1,6 @@
 #define LDRpin A0 // pin where we connected the LDR and the resistor
 #define LEDpin 9
+#define LED_STATE_CHANGE 3 // digital yellow light to indicate when button is pressed
 #define OFF 0
 #define AUTO 1
 #define DIM 2
@@ -9,7 +10,7 @@
 #define FULL_VAL 255
 
 // Defintion of states (4 states)
-  // off, auto, dim,full,off
+  // off, auto, dim, full, off
 
 // Button Vars
 int buttonPin = 2;
@@ -17,7 +18,8 @@ int buttonState = 0;
 bool pressed = false;
 
 int state = OFF;
-int brightness = 0;
+int brightness = OFF;
+
 int LDRValue;
 int delta;
 
@@ -34,45 +36,29 @@ void loop() {
   // Collect all sensor information
   LDRValue = analogRead(LDRpin); // read the value from the LDR
   buttonState = digitalRead(buttonPin);
-  debug();
+  //debug();
 
   // Changes state if necessary
   if (buttonRead()){
       cycle();
-      debug();
+      delay(100);
   } 
-
+  analogWrite(LED_STATE_CHANGE, OFF);
   // Actions based on state 
   if (state == OFF)
-    brightness = ramp(OFF);
+    ramp(OFF);
   else if (state == AUTO)
-    brightness = autoDim(LDRValue);
+    ramp(autoDim(LDRValue));
   else if (state == DIM) 
-    brightness = ramp(DIM_VAL);
+    ramp(DIM_VAL);
   else if (state == FULL)
-    brightness = ramp(FULL_VAL);
+    ramp(FULL_VAL);
   else 
     Serial.print("State number not valid\n");
+
     
   analogWrite(LEDpin, brightness);
   delay(100);
-}
-
-byte ramp(byte target) {
-  if (ramping) {
-    delta = delta * 2;
-  } else {
-    delta = (target - brightness) / 8;
-    ramping = true;
-  }
-  if (brightness + 40 > target or brightness - 40 < target) {
-    return target;
-  }
-  return brightness + delta;
-  // int delta = (target - brightness) / 2;
-//  if(abs(delta) < 10 ) // threshold for error
-//    return target;
-//  return brightness + delta;
 }
 
 byte autoDim(int LDRValue) {
@@ -81,16 +67,6 @@ byte autoDim(int LDRValue) {
     return DIM_VAL;
   else 
     return FULL_VAL;
-}
-
-void debug(){
-  Serial.print("State: ");
-  Serial.println(state);
-  Serial.print("LDR Value: ");
-  Serial.println(LDRValue);
-  Serial.print("Brightness: ");
-  Serial.println(brightness);
-  
 }
 
 bool buttonRead(){
@@ -106,8 +82,132 @@ bool buttonRead(){
 }
 
 void cycle() {
+  analogWrite(LED_STATE_CHANGE, FULL_VAL);
   if (state == FULL)
     state = OFF;
-  else 
+  else{
     state++;
+  }
 }
+
+void ramp(int target){
+  if(brightness != target) 
+    ramping = true;
+  if (ramping){
+      if(target > brightness)
+        rampUp(target);
+      else 
+        rampDown(target);
+    }
+  }
+
+ void rampUp(int target){
+  int original_brightness = brightness;
+  float delta = 0.02;
+  // Calculate current percentage of perceived brightness based on current val of brightness 
+  float perceived_percent = sqrt((float)brightness / FULL_VAL); // gives a percentage 
+
+  // Increase the percent perceived brightness by delta 
+  float perceived_goal_percent = perceived_percent + delta;
+  
+  // Calculate the measured brightness needed to get the perceived goal percent
+  float measured_brightness = sq(perceived_goal_percent);
+  if(measured_brightness >= ((float)target/FULL_VAL)){
+      brightness = target;
+      ramping = false; // bool for ramping to stop 
+      
+   }else{
+      brightness = FULL_VAL * measured_brightness; // Note: First product should not round down to 0, or infinite loop
+      if(brightness == original_brightness){ // Otherwise, potential for infinite loop
+          brightness+=5;
+          if (brightness > target){
+            brightness = target;
+            ramping = false;
+           }
+        }
+    }
+}
+
+void rampDown(int target){
+  int original_brightness = brightness;
+  float delta = 0.02;
+  // Calculate current percentage of perceived brightness based on current val of brightness 
+  float perceived_percent = sqrt((float)brightness / FULL_VAL); // gives a percentage 
+
+  // Decrease the percent perceived brightness by delta 
+  float perceived_goal_percent = perceived_percent - delta;
+  
+  if (perceived_goal_percent < 0){
+    brightness = target;
+    ramping = false;
+    return;
+    }
+  
+  // Calculate the measured brightness needed to get the perceived goal percent
+  float measured_brightness = sq(perceived_goal_percent); // Problem: negative perceived may become positive 
+  if(measured_brightness <= ((float)target/FULL_VAL)){
+      brightness = target;
+      ramping = false; // bool for ramping to stop 
+      
+   }else{
+      Serial.print("Measured brightness percent: ");
+      Serial.println(measured_brightness);
+      brightness = FULL_VAL * measured_brightness; 
+      if(brightness == original_brightness){ // Otherwise, potential for infinite loop
+          brightness-=5;
+          if (brightness < target){
+            brightness = target;
+            ramping = false;
+            } 
+        }
+    }
+}
+
+void debug(){
+  Serial.print("State: ");
+  Serial.println(state);
+  Serial.print("LDR Value: ");
+  Serial.println(LDRValue);
+  Serial.print("Brightness: ");
+  Serial.println(brightness);
+  
+}
+
+
+
+
+
+
+
+
+
+
+//byte ramp(byte target) {
+//  if (ramping) {
+//    if (delta > 0)
+//      delta = delta * 2;
+//    else 
+//      delta = delta * (1/2);
+//    Serial.print("NEXT RAMPING VALUE ");
+//    Serial.println(delta + brightness);
+//  } else {
+//    if (target - brightness > 0) 
+//       delta = (target - brightness) / 24;
+//    else 
+//      delta = (target - brightness) / 5;
+//    Serial.print("FIRST RAMPING VALUE ");
+//    Serial.println(delta + brightness);
+//    ramping = true;
+//  }
+//  if ((brightness + delta >= target and delta > 0) or (brightness + delta <= target and delta < 0)) {
+//    Serial.println("TARGET REACHED");
+//    ramping = false;
+//    delta = 0;
+//    return target;
+//  }
+//  return brightness + delta;
+//  // int delta = (target - brightness) / 2;
+////  if(abs(delta) < 10 ) // threshold for error
+////    return target;
+////  return brightness + delta;
+//}
