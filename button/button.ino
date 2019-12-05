@@ -1,4 +1,4 @@
-const int buttonPin = 2;
+#define buttonPin A2
 const int ledPin = 9;
 int buttonState = 0;
 bool buttonON = 0;
