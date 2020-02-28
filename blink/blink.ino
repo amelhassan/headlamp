@@ -1,3 +1,4 @@
+// This file test an LED by blinking it on and off
 int ledPin = 9;
 void setup() {
   // put your setup code here, to run once:

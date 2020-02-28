@@ -1,13 +1,17 @@
-#define LDR_PIN A0 // pin where we connected the LDR and the resistor
-#define LED_PIN 11
-#define LED_STATE_CHANGE 9 // digital yellow light to indicate when button is pressed
-#define LED_RED 10
-#define BUTTON_PIN 5
+// PINS
+#define LDR_PIN A5 // A0, pin where we connected the LDR and the resistor
+#define LED_PIN 11 // 11
+#define BUTTON_PIN 6 // 5
+#define LED_STATE_CHANGE_PIN 9 // 9 digital yellow light to indicate when button is pressed
+#define LED_RED_PIN 10 // 10
+
+// STATES
 #define OFF 0
 #define AUTO 1
 #define RED 2
 #define DIM 3
 #define FULL 4
+// VALUES
 #define LDR_thresh 1000
 #define DIM_VAL 20
 #define FULL_VAL 255
@@ -32,8 +36,8 @@ void setup() {
   Serial.begin(9600); // sets serial port for communication
   pinMode(LDR_PIN, INPUT);
   pinMode(LED_PIN, OUTPUT);
-  pinMode(LED_RED, OUTPUT);
-  pinMode(LED_STATE_CHANGE, OUTPUT);
+  pinMode(LED_RED_PIN, OUTPUT);
+  pinMode(LED_STATE_CHANGE_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT);
 
 }
@@ -42,14 +46,14 @@ void loop() {
   // Collect all sensor information
   LDRValue = analogRead(LDR_PIN); // read the value from the LDR
   buttonState = digitalRead(BUTTON_PIN);
-  //debug();
+  debug();
 
   // Changes state if necessary
   if (buttonRead()){
       cycle();
       delay(100);
   } 
-  analogWrite(LED_STATE_CHANGE, OFF);
+  analogWrite(LED_STATE_CHANGE_PIN, OFF);
   // Actions based on state 
   if (state == OFF)
     ramp(OFF);
@@ -57,10 +61,10 @@ void loop() {
     ramp(autoDim(LDRValue));
   else if (state == RED){
     ramp(OFF);
-    analogWrite(LED_RED, FULL_VAL);
+    analogWrite(LED_RED_PIN, FULL_VAL);
   }
   else if (state == DIM){
-    analogWrite(LED_RED, OFF);
+    analogWrite(LED_RED_PIN, OFF);
     ramp(DIM_VAL);
   }
   else if (state == FULL)
@@ -82,6 +86,7 @@ byte autoDim(int LDRValue) {
 }
 
 bool buttonRead(){
+  Serial.print("HERE\n");
   if (buttonState == HIGH and not pressed) {
     Serial.print("BUTTON PRESSED\n");
     pressed = true;
@@ -94,7 +99,7 @@ bool buttonRead(){
 }
 
 void cycle() {
-  analogWrite(LED_STATE_CHANGE, FULL_VAL);
+  analogWrite(LED_STATE_CHANGE_PIN, FULL_VAL);
   if (state == FULL)
     state = OFF;
   else{

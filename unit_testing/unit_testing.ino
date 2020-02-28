@@ -1,7 +1,7 @@
-#define LDRpin A0 // pin where we connected the LDR and the resistor
-#define LED_PIN A4
-#define LED_STATE_CHANGE A3 // digital yellow light to indicate when button is pressed
-#define BUTTON_PIN 5
+#define LDRpin 0 // pin where we connected the LDR and the resistor
+#define LED_PIN 13
+#define LED_STATE_CHANGE 11 // digital yellow light to indicate when button is pressed
+#define BUTTON_PIN A5
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600); // sets serial port for communication

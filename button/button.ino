@@ -1,5 +1,6 @@
-#define buttonPin A2
-const int ledPin = 9;
+// This file checks when the button state is changed (i.e. when it is pressed)
+#define buttonPin 10
+#define ledPin 13
 int buttonState = 0;
 bool buttonON = 0;
 byte brightness = 0;
