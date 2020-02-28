@@ -1,3 +1,5 @@
+// This file dims in such a manner that for a given time step, the measured 
+// brightness decreases in a way to keep the precieved brightness constant.
 #define LDRpin A0 // pin where we connected the LDR and the resistor
 #define LEDpin 9
 #define OFF 0

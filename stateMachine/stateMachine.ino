@@ -1,5 +1,5 @@
 // PINS
-#define LDR_PIN A5 // A0, pin where we connected the LDR and the resistor
+#define LDR_PIN 3 // A0, pin where we connected the LDR and the resistor
 #define LED_PIN 11 // 11
 #define BUTTON_PIN 6 // 5
 #define LED_STATE_CHANGE_PIN 9 // 9 digital yellow light to indicate when button is pressed

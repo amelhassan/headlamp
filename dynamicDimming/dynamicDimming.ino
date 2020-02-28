@@ -3,12 +3,13 @@
 // One function is a linear mapping between LDR value and brightness. 
 // The other is a logrithmic mapping. 
 // Rule of thumb: The less ambient light there is, the less artifical light that is needed. Have a max LDR value where there is no light.
+// Minimum lumens should be around 40
 
-#define LDR_PIN A5 // pin where we connected the LDR and the resistor
-#define LED_PIN 13
-#define LED_STATE_CHANGE 11 // digital yellow light to indicate when button is pressed
-#define LED_RED 12
-#define BUTTON_PIN 10
+#define LDR_PIN 3 
+#define LED_PIN 12
+#define LED_STATE_CHANGE 10 // yellow light to indicate when button is pressed
+#define LED_RED 11
+#define BUTTON_PIN 6
 #define OFF 0
 #define AUTO 1
 #define RED 2
@@ -62,7 +63,103 @@ void loop() {
   delay(100);
 }
 
+// "Exponential" mapping between LDR value (ambient light) and output brightness
+// FUNCTION TO IMPLEMENT IN STATE MACHINE
+byte autoDimLogReverse(int LDRValue) {
+  
+  float MIN_LDR = 10; 
+  float MAX_LDR = 400;
 
+  float MIN_BRIGHTNESS = 10;
+  float MAX_BRIGHTNESS = 100;
+  
+  if (LDRValue > MAX_LDR)
+    return OFF;
+  else if (LDRValue < MIN_LDR){
+    return MIN_BRIGHTNESS;
+    }
+  else {
+     // LDR to sinh mapping 
+     double sinh_val = sinhMap(LDRValue);
+     // sinh to linear brightness mapping
+     double MIN_IN = sinhMap(MIN_LDR);
+     double MAX_IN = sinhMap(MAX_LDR);
+     double slope = 1.0 * (MAX_BRIGHTNESS - MIN_BRIGHTNESS) / (MAX_IN - MIN_IN);
+     return (byte) MIN_BRIGHTNESS + round(slope * (sinh_val - MIN_IN));
+     
+    }
+}
+
+// sinh function
+double sinhMap(double y){
+    return log10((y + sqrt(pow(y, 2) + 4))/2);
+  }
+
+// TESTS 
+
+// Test with mock inputs 
+void testDimmer(){
+  
+  // Mock inputs, analog reads in ints between 0 and 1023 
+  int mockInput[] = {400, 350, 300, 250, 200, 150, 100, 50, 0};
+  int len = sizeof(mockInput)/sizeof(mockInput[0]);
+  int result[len];
+  
+  for (int i = 0; i < len; i++){
+    result[i] = autoDimLogReverse(mockInput[i]);
+    Serial.print("For LDR reading of: ");
+    Serial.print(mockInput[i]);
+    Serial.print(" the corresponding brightness level is: ");
+    Serial.print(result[i]);
+    Serial.println();
+   }
+
+   /////// TESTS /////////
+  testInRange(result, len);
+  testDecInc(result, len);
+  // delay(1000); // slow down the main loop 
+}
+
+// Make sure brightness is within range 0 to 100
+void testInRange(int result[], int len){
+  bool passed = true; 
+  for (int i = 0; i < len; i++){
+    if (result[i] > 100 || result[i] < 0)
+      passed = false;
+   }
+
+  if(passed)
+    Serial.println("RANGE TEST PASSED\n");
+  else 
+    Serial.println("RANGE TEST FAILED\n");
+}
+
+// Make sure brightness is decreasing at an increasing rate 
+void testDecInc(int result[], int len){
+  bool passed = true; 
+   for (int i = 0; i < len - 2; i++){
+     if (result[i] - result[i + 1] > result[i + 1] - result[i + 2]){
+        // Serial.print("Brightness value is not decreasing at an increasing rate ");
+        // Serial.println();
+        passed = false;
+      }
+  }
+
+  if(passed)
+    Serial.println("DEC/INC TEST PASSED\n");
+  else 
+    Serial.println("DEC/INC TEST FAILED\n");
+}
+void debug(){
+  Serial.print("LDR Value: ");
+  Serial.println(LDRValue);
+  Serial.print("Brightness: ");
+  Serial.println(brightness);
+}
+
+// OTHER TYPES OF MAPPINGS 
+
+// Linear dimming relative to ambient light 
 byte autoDimLinear(int LDRValue) {
   int MAX_LDR = 800;
   int MIN_LDR = 0; 
@@ -78,6 +175,7 @@ byte autoDimLinear(int LDRValue) {
     }
 }
 
+// Log dimming relative to ambient light 
 byte autoDimLog(int LDRValue) {
   // TODO: make drops between higher LDR values less extreme, but drops 
   // between lower LDR values more extreme. Have more variability in the brightness output.
@@ -93,59 +191,4 @@ byte autoDimLog(int LDRValue) {
       double slope = 1.0 * (MAX_BRIGHTNESS - MIN_BRIGHTNESS) / (MAX_LDR - MIN_LDR);
       return exp(MIN_BRIGHTNESS + round(slope*(LDRValue-MIN_LDR)));
     }
-}
-
-byte autoDimLogReverse(int LDRValue) {
-  // TODO: Brightness loops around to high values after a certain low LDR threshold is reached 
-  // Altough there is more precision for the brightness value, it does not stay within bounds
-  int MAX_LDR = 800;
-  int MIN_LDR = 0; 
-  
-  int MAX_BRIGHTNESS = log(100);
-  int MIN_BRIGHTNESS = log(10);
-  if (LDRValue > MAX_LDR)
-    return OFF;
-  else {
-    // Start by linear mapping LDR values to brightness values 
-      double slope = 1.0 * (MAX_BRIGHTNESS - MIN_BRIGHTNESS) / (MAX_LDR - MIN_LDR);
-      return round((log(LDRValue)-MIN_BRIGHTNESS) / slope) + MIN_LDR;
-    }
-}
-
-void testDimmer(){
-  // Mock inputs, analog reads in ints between 0 and 1023 
-  int mockInput[] = {120, 110, 100, 90, 80, 70, 60, 50, 40, 30, 20, 10};
-  int len = sizeof(mockInput);
-  int result[len];
-  
-  for (int i = 0; i < len; i++){
-    result[i] = autoDimLogReverse(mockInput[i]);
-    Serial.print("For LDR reading of: ");
-    Serial.print(mockInput[i]);
-    Serial.print(" the corresponding brightness level is: ");
-    Serial.print(result[i]);
-    Serial.println();
-   }
-
-   // Make sure brightness is decreasing at an increasing rate
-   int passed = true;   
-   for (int i = 0; i < len - 2; i++){
-     if (result[i] - result[i + 1] >= result[i + 1] - result[i + 2]){
-        // Serial.print("Brightness value is not decreasing at an increasing rate ");
-        // Serial.println();
-        passed = false;
-      }
-    }
-    if(true)
-      Serial.println("TEST PASSED");
-     else
-       Serial.println("TEST FAILED: Brightness value is not decreasing at an increasing rate");
-    delay(10000000); // slow down the main loop 
-}
-
-void debug(){
-  Serial.print("LDR Value: ");
-  Serial.println(LDRValue);
-  Serial.print("Brightness: ");
-  Serial.println(brightness);
 }

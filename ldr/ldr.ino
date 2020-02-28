@@ -1,8 +1,8 @@
 #define LDRpin A0 // pin where we connected the LDR and the resistor
-int ledPin = 9;
+int ledPin = 3;
 int LDRValue = 0;     // result of reading the analog pin
 byte brightness = 255;
-byte ramp = 105
+byte ramp = 105;
 bool dimmed = false;
 
 void setup() {
@@ -13,24 +13,24 @@ void setup() {
 void loop() {
   // Collect all sensor information
   LDRValue = analogRead(LDRpin); // read the value from the LDR
-  
-  // Display debug info
-  info();
-
-  delay(100); 
-  // Decision tree
-  // Higher LDRValue == Brighter Environment
-  if (LDRValue > 1000){
-      Serial.println("dimming");
-      brightness = 105;
-      analogWrite(ledPin, brightness); // dims 
-    dimmed = true;
-  } else if (dimmed) {
-    ramp = rampUp(ramp);
-  } else {
-    brightness = 255;
-    analogWrite(ledPin, brightness);
-  }
+  Serial.println(LDRValue);
+//  // Display debug info
+//  info();
+//
+//  delay(100); 
+//  // Decision tree
+//  // Higher LDRValue == Brighter Environment
+//  if (LDRValue > 1000){
+//      Serial.println("dimming");
+//      brightness = 105;
+//      analogWrite(ledPin, brightness); // dims 
+//    dimmed = true;
+//  } else if (dimmed) {
+//    ramp = rampUp(ramp);
+//  } else {
+//    brightness = 255;
+//    analogWrite(ledPin, brightness);
+//  }
 }
 
 byte rampUp(byte r){
@@ -41,8 +41,8 @@ byte rampUp(byte r){
     return;
   } else {
     r += 50;
-    analogWrite(ledPin, r)
-    delay(1000)
+    analogWrite(ledPin, r);
+    delay(1000);
     return r;
   }
 }
