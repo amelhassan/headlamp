@@ -5,10 +5,10 @@
 // Rule of thumb: The less ambient light there is, the less artifical light that is needed. Have a max LDR value where there is no light.
 // Minimum lumens should be around 40
 
-#define LDR_PIN 3 
-#define LED_PIN 12
-#define LED_STATE_CHANGE 10 // yellow light to indicate when button is pressed
-#define LED_RED 11
+#define LDR_PIN A5 
+#define LED_PIN 11
+#define LED_STATE_CHANGE 9 // yellow light to indicate when button is pressed
+#define LED_RED 10
 #define BUTTON_PIN 6
 #define OFF 0
 #define AUTO 1
@@ -52,14 +52,17 @@ void loop() {
   // checking out ldr output 
   // Serial.print("LDR Value: ");
   // Serial.println(LDRValue);
+  LDRValue = analogRead(LDR_PIN); // read the value from the LDR
+  brightness = autoDimLogReverse(LDRValue);
+  Serial.print("Brightness value: ");
+  Serial.println(brightness);
+  Serial.print("LDR value: ");
+  Serial.println(LDRValue);
   
-//  brightness = autoDimLogReverse(LDRValue);
-//  Serial.print("Brightness value: ");
-//  Serial.println(brightness);
-//  analogWrite(LED_PIN, brightness);
-//  delay(100);
+  analogWrite(LED_PIN, brightness);
+  delay(100);
 
-  testDimmer();
+  // testDimmer();
   delay(100);
 }
 
