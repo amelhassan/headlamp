@@ -43,10 +43,11 @@ void setup() {
 }
 
 void loop() {
+  // uint32_t ts1 = millis(); // Timing code 
   // Collect all sensor information
   LDRValue = analogRead(LDR_PIN); // read the value from the LDR
   buttonState = digitalRead(BUTTON_PIN);
-  debug();
+  // debug();
 
   // Changes state if necessary
   if (buttonRead()){
@@ -75,6 +76,11 @@ void loop() {
     
   analogWrite(LED_PIN, brightness);
   delay(100);
+
+  // Timing code 
+//  uint32_t ts2 = millis();
+//  Serial.print("Loop time elapsed in ms: ");
+//  Serial.println(ts2-ts1);
 }
 
 byte autoDim(int LDRValue) {
@@ -86,9 +92,8 @@ byte autoDim(int LDRValue) {
 }
 
 bool buttonRead(){
-  Serial.print("HERE\n");
   if (buttonState == HIGH and not pressed) {
-    Serial.print("BUTTON PRESSED\n");
+    Serial.println("BUTTON PRESSED\n");
     pressed = true;
     return true;
   } 
@@ -167,8 +172,8 @@ void rampDown(int target){
       ramping = false; // bool for ramping to stop 
       
    }else{
-      Serial.print("Measured brightness percent: ");
-      Serial.println(measured_brightness);
+      // Serial.print("Measured brightness percent: ");
+      // Serial.println(measured_brightness);
       brightness = FULL_VAL * measured_brightness; 
       if(brightness == original_brightness){ // Otherwise, potential for infinite loop
           brightness-=5;
