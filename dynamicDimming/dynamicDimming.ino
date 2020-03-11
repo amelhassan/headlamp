@@ -52,6 +52,7 @@ void loop() {
   // checking out ldr output 
   // Serial.print("LDR Value: ");
   // Serial.println(LDRValue);
+  
   LDRValue = analogRead(LDR_PIN); // read the value from the LDR
   brightness = autoDimLogReverse(LDRValue);
   Serial.print("Brightness value: ");
@@ -62,8 +63,8 @@ void loop() {
   analogWrite(LED_PIN, brightness);
   delay(100);
 
-  // testDimmer();
-  delay(100);
+//  testDimmer();
+//  delay(100);
 }
 
 // "Exponential" mapping between LDR value (ambient light) and output brightness
@@ -71,10 +72,10 @@ void loop() {
 byte autoDimLogReverse(int LDRValue) {
   
   float MIN_LDR = 10; 
-  float MAX_LDR = 400;
+  float MAX_LDR = 1000;
 
   float MIN_BRIGHTNESS = 10;
-  float MAX_BRIGHTNESS = 100;
+  float MAX_BRIGHTNESS = 200;
   
   if (LDRValue > MAX_LDR)
     return OFF;
@@ -104,7 +105,7 @@ double sinhMap(double y){
 void testDimmer(){
   
   // Mock inputs, analog reads in ints between 0 and 1023 
-  int mockInput[] = {400, 350, 300, 250, 200, 150, 100, 50, 0};
+  int mockInput[] = {1000, 900, 800, 600, 400, 350, 300, 250, 200, 150, 100, 50, 0};
   int len = sizeof(mockInput)/sizeof(mockInput[0]);
   int result[len];
   

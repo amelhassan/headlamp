@@ -31,6 +31,11 @@ int delta;
 
 bool ramping = false;
 
+// Control rate of auto state 
+uint32_t start_auto; 
+uint32_t end_auto;
+uint32_t autoRate = 1000;
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600); // sets serial port for communication
@@ -39,11 +44,13 @@ void setup() {
   pinMode(LED_RED_PIN, OUTPUT);
   pinMode(LED_STATE_CHANGE_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT);
-
+  start_auto = millis();
+  end_auto = millis();
 }
 
 void loop() {
-  // uint32_t ts1 = millis(); // Timing code 
+  // uint32_t ts1 = millis(); // Timing code
+   
   // Collect all sensor information
   LDRValue = analogRead(LDR_PIN); // read the value from the LDR
   buttonState = digitalRead(BUTTON_PIN);
@@ -55,11 +62,14 @@ void loop() {
       delay(100);
   } 
   analogWrite(LED_STATE_CHANGE_PIN, OFF);
+  end_auto = millis();
   // Actions based on state 
   if (state == OFF)
     ramp(OFF);
-  else if (state == AUTO)
-    ramp(autoDim(LDRValue));
+  else if (state == AUTO){
+    if (end_auto - start_auto > autoRate)
+      ramp(autoLogReverse(LDRValue)); // end and start used to control rate of change
+  }
   else if (state == RED){
     ramp(OFF);
     analogWrite(LED_RED_PIN, FULL_VAL);
@@ -70,30 +80,23 @@ void loop() {
   }
   else if (state == FULL)
     ramp(FULL_VAL);
-  else 
-    Serial.print("State number not valid\n");
+  else{
+    Serial.print("State number not valid: ");
+    Serial.println(state);
+    }
 
-    
   analogWrite(LED_PIN, brightness);
   delay(100);
 
-  // Timing code 
+// Timing code 
 //  uint32_t ts2 = millis();
 //  Serial.print("Loop time elapsed in ms: ");
 //  Serial.println(ts2-ts1);
 }
 
-byte autoDim(int LDRValue) {
-  // Eventually log mapping
-  if (LDRValue > 1000)
-    return DIM_VAL;
-  else 
-    return FULL_VAL;
-}
-
 bool buttonRead(){
   if (buttonState == HIGH and not pressed) {
-    Serial.println("BUTTON PRESSED\n");
+    // Serial.println("BUTTON PRESSED\n");
     pressed = true;
     return true;
   } 
@@ -184,6 +187,37 @@ void rampDown(int target){
         }
     }
 }
+
+// Function for Auto state
+// "Exponential" mapping between LDR value (ambient light) and output brightness
+byte autoLogReverse(int LDRValue) {
+  start_auto = millis();
+  float MIN_LDR = 10; 
+  float MAX_LDR = 1000;
+
+  float MIN_BRIGHTNESS = 10;
+  float MAX_BRIGHTNESS = 200;
+  
+  if (LDRValue > MAX_LDR)
+    return OFF;
+  else if (LDRValue < MIN_LDR){
+    return MIN_BRIGHTNESS;
+    }
+  else {
+     // LDR to sinh mapping 
+     double sinh_val = sinhMap(LDRValue);
+     // sinh to linear brightness mapping
+     double MIN_IN = sinhMap(MIN_LDR);
+     double MAX_IN = sinhMap(MAX_LDR);
+     double slope = 1.0 * (MAX_BRIGHTNESS - MIN_BRIGHTNESS) / (MAX_IN - MIN_IN);
+     return (byte) MIN_BRIGHTNESS + round(slope * (sinh_val - MIN_IN));
+    }
+}
+
+// sinh function for autoLogReverse function
+double sinhMap(double y){
+    return log10((y + sqrt(pow(y, 2) + 4))/2);
+  }
 
 void debug(){
 //  Serial.print("State: ");
